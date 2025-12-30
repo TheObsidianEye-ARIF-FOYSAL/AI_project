@@ -1,0 +1,83 @@
+# ========================
+# Data files
+# ========================
+*.csv
+*.tsv
+*.xlsx
+*.xls
+*.json
+*.xml
+
+# ========================
+# Images
+# ========================
+# *.jpg
+# *.jpeg
+# *.png
+# *.gif
+# *.bmp
+# *.tiff
+# *.webp
+
+# ========================
+# Videos
+# ========================
+*.mp4
+*.avi
+*.mov
+*.mkv
+
+# ========================
+# Audio
+# ========================
+*.mp3
+*.wav
+*.aac
+
+# ========================
+# ML / Data Science
+# ========================
+*.h5
+*.hdf5
+*.ckpt
+*.pt
+*.pth
+*.onnx
+*.joblib
+*.pkl
+
+# ========================
+# Logs & temp files
+# ========================
+*.log
+*.tmp
+*.cache
+
+# ========================
+# Python
+# ========================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv/
+venv/
+
+# ========================
+# Jupyter
+# ========================
+.ipynb_checkpoints/
+
+# ========================
+# OS / Editor
+# ========================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+
+
+
+D:/Matchine_Learning/CampusX/tutorial/AI_project/animals-10/
