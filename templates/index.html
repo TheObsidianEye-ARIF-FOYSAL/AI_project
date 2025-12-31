@@ -1,35 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-
-  <!-- ✅ Required for mobile devices -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>Animal Classifier</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animal Classifier</title>
 </head>
 <body>
-
-  <h2>Animal Image Classifier</h2>
-
-  <!-- ✅ Label added -->
-  <label for="imageInput">Upload an animal image:</label><br><br>
-
-  <!-- ✅ title + accept added -->
-  <input
-    type="file"
-    id="imageInput"
-    accept="image/*"
-    title="Choose an image to classify"
-  >
-
-  <br><br>
-
-  <button onclick="uploadImage()">Predict</button>
-
-  <p id="result"></p>
-
-  <script src="script.js"></script>
-
+    <h2>Animal Image Classifier</h2>
+    <form action="/predict" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" required>
+        <button type="submit">Predict</button>
+    </form>
 </body>
 </html>
