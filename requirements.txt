@@ -1,5 +1,11 @@
+# tensorflow==2.12.0
+# numpy<2
+# flask
+# gunicorn
+matplotlib
+
+Flask==2.3.2
+gunicorn==20.1.0
 tensorflow==2.12.0
 numpy<2
-flask
-gunicorn
-matplotlib
+gdown==4.7.1
