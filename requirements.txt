@@ -1,5 +1,5 @@
-tensorflow==2.14.0
-numpy
+tensorflow==2.12.0
+numpy<2
 flask
 gunicorn
 matplotlib
