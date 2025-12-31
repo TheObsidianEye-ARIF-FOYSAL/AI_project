@@ -123,19 +123,9 @@ def health():
 
 @app.route("/model-status", methods=["GET"])
 def model_status():
-    # Try to load model if not loaded
-    if model is None:
-        logger.info("⚠️ Model not loaded, attempting to load...")
-        load_model_sync()
-        
-        if model is None:
-            error_msg = model_error or "Model not loaded. Please try again in a moment."
-            logger.error(f"❌ Model still not loaded: {error_msg}")
-            return jsonify({
-                "error": error_msg,
-                "model_loading": model_loading,
-                "suggestion": "The model is loading. Please wait 10-20 seconds and try again."
-            }), 503
+    """Detailed model status endpoint"""
+    status = {
+        "model_loaded": model is not None,
         "model_loading": model_loading,
         "model_path": MODEL_PATH,
         "model_exists": os.path.exists(MODEL_PATH),
@@ -155,9 +145,19 @@ def model_status():
 def predict():
     logger.info(f"🔍 Predict endpoint called. Model status: {model is not None}")
     
+    # Try to load model if not loaded
     if model is None:
-        logger.error("❌ Model is None - returning error")
-        return jsonify({"error": "Model not loaded. Please restart the server."}), 500
+        logger.info("⚠️ Model not loaded, attempting to load...")
+        load_model_sync()
+        
+        if model is None:
+            error_msg = model_error or "Model not loaded. Please try again in a moment."
+            logger.error(f"❌ Model still not loaded: {error_msg}")
+            return jsonify({
+                "error": error_msg,
+                "model_loading": model_loading,
+                "suggestion": "The model is loading. Please wait 10-20 seconds and try again."
+            }), 503
 
     if "file" not in request.files:
         logger.warning("⚠️ No file in request")
