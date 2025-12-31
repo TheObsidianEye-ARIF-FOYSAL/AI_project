@@ -1,82 +1,82 @@
 import os
 import numpy as np
 import tensorflow as tf
-from flask import Flask, request, jsonify, render_template
-from tensorflow.keras.preprocessing import image
-from werkzeug.utils import secure_filename
+from flask import Flask, request, jsonify
+from PIL import Image
 
-# --------------------------------------------------
-# App configuration
-# --------------------------------------------------
+# -------------------------------
+# Flask App
+# -------------------------------
 app = Flask(__name__)
 
-UPLOAD_FOLDER = "uploads"
-MODEL_PATH = "animals10_model_tf"   # SavedModel directory
-IMG_SIZE = 224
+# -------------------------------
+# Load Model (Keras 3 compatible)
+# -------------------------------
+MODEL_PATH = "animals10_model.keras"
 
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-# --------------------------------------------------
-# Load model ONCE (important for performance)
-# --------------------------------------------------
 model = tf.keras.models.load_model(
     MODEL_PATH,
     compile=False
 )
 
-# Class labels (MUST match training order)
+# -------------------------------
+# Class Names (CHANGE if needed)
+# -------------------------------
 CLASS_NAMES = [
-    "butterfly",
-    "cat",
-    "chicken",
-    "cow",
-    "dog",
-    "elephant",
-    "horse",
-    "sheep",
-    "spider",
-    "squirrel"
+    "cat", "dog", "horse", "sheep", "cow",
+    "elephant", "butterfly", "chicken",
+    "spider", "squirrel"
 ]
 
-# --------------------------------------------------
+# -------------------------------
+# Image Preprocessing
+# -------------------------------
+def preprocess_image(image):
+    image = image.convert("RGB")
+    image = image.resize((224, 224))
+    img_array = np.array(image) / 255.0
+    img_array = np.expand_dims(img_array, axis=0)
+    return img_array
+
+# -------------------------------
 # Routes
-# --------------------------------------------------
-@app.route("/")
+# -------------------------------
+@app.route("/", methods=["GET"])
 def home():
-    return render_template("index.html")
+    return jsonify({
+        "status": "running",
+        "message": "Animal Classification API is live 🚀"
+    })
 
 @app.route("/predict", methods=["POST"])
 def predict():
     if "file" not in request.files:
-        return jsonify({"error": "No file uploaded"})
+        return jsonify({"error": "No file uploaded"}), 400
 
     file = request.files["file"]
+
     if file.filename == "":
-        return jsonify({"error": "No selected file"})
+        return jsonify({"error": "Empty filename"}), 400
 
-    filename = secure_filename(file.filename)
-    filepath = os.path.join(UPLOAD_FOLDER, filename)
-    file.save(filepath)
+    try:
+        image = Image.open(file)
+        processed = preprocess_image(image)
 
-    # Load and preprocess image
-    img = image.load_img(filepath, target_size=(IMG_SIZE, IMG_SIZE))
-    img_array = image.img_to_array(img)
-    img_array = np.expand_dims(img_array, axis=0) / 255.0
+        predictions = model.predict(processed)
+        predicted_index = int(np.argmax(predictions))
+        confidence = float(np.max(predictions))
 
-    # Prediction
-    predictions = model.predict(img_array)
-    predicted_index = np.argmax(predictions)
-    confidence = float(np.max(predictions))
+        return jsonify({
+            "prediction": CLASS_NAMES[predicted_index],
+            "confidence": round(confidence * 100, 2)
+        })
 
-    predicted_class = CLASS_NAMES[predicted_index]
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-    return jsonify({
-        "prediction": predicted_class,
-        "confidence": round(confidence * 100, 2)
-    })
-
-# --------------------------------------------------
-# Main
-# --------------------------------------------------
+# -------------------------------
+# Run App (Render compatible)
+# -------------------------------
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
