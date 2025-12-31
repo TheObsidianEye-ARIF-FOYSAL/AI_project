@@ -1,92 +1,82 @@
 import os
 import numpy as np
-from flask import Flask, request, jsonify, render_template
-from PIL import Image
 import tensorflow as tf
+from flask import Flask, request, jsonify
+from PIL import Image
 
-# --------------------------------------------------
-# Flask app
-# --------------------------------------------------
+# -------------------------------
+# Flask App
+# -------------------------------
 app = Flask(__name__)
 
-# --------------------------------------------------
-# Model path (folder created by model.export())
-# --------------------------------------------------
-MODEL_PATH = "animals10_model_export"
+# -------------------------------
+# Load Model (Keras 3 compatible)
+# -------------------------------
+MODEL_PATH = "animals10_model.keras"
 
-# --------------------------------------------------
-# Load model (Keras 3 compatible)
-# --------------------------------------------------
 model = tf.keras.models.load_model(
     MODEL_PATH,
     compile=False
 )
 
-# --------------------------------------------------
-# Class labels (CHANGE ORDER IF YOUR TRAINING ORDER IS DIFFERENT)
-# --------------------------------------------------
+# -------------------------------
+# Class Names (CHANGE if needed)
+# -------------------------------
 CLASS_NAMES = [
-    "butterfly",
-    "cat",
-    "chicken",
-    "cow",
-    "dog",
-    "elephant",
-    "horse",
-    "sheep",
-    "spider",
-    "squirrel"
+    "cat", "dog", "horse", "sheep", "cow",
+    "elephant", "butterfly", "chicken",
+    "spider", "squirrel"
 ]
 
-# --------------------------------------------------
-# Image preprocessing
-# --------------------------------------------------
+# -------------------------------
+# Image Preprocessing
+# -------------------------------
 def preprocess_image(image):
     image = image.convert("RGB")
     image = image.resize((224, 224))
-    image = np.array(image) / 255.0
-    image = np.expand_dims(image, axis=0)
-    return image
+    img_array = np.array(image) / 255.0
+    img_array = np.expand_dims(img_array, axis=0)
+    return img_array
 
-# --------------------------------------------------
+# -------------------------------
 # Routes
-# --------------------------------------------------
-@app.route("/")
+# -------------------------------
+@app.route("/", methods=["GET"])
 def home():
-    return """
-    <h2>Animal Image Classifier</h2>
-    <form action="/predict" method="post" enctype="multipart/form-data">
-        <input type="file" name="image" required>
-        <button type="submit">Predict</button>
-    </form>
-    """
+    return jsonify({
+        "status": "running",
+        "message": "Animal Classification API is live 🚀"
+    })
 
 @app.route("/predict", methods=["POST"])
 def predict():
-    if "image" not in request.files:
-        return jsonify({"error": "No image uploaded"}), 400
+    if "file" not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
 
-    file = request.files["image"]
+    file = request.files["file"]
+
+    if file.filename == "":
+        return jsonify({"error": "Empty filename"}), 400
 
     try:
         image = Image.open(file)
         processed = preprocess_image(image)
 
         predictions = model.predict(processed)
-        class_index = np.argmax(predictions)
-        confidence = float(predictions[0][class_index])
+        predicted_index = int(np.argmax(predictions))
+        confidence = float(np.max(predictions))
 
         return jsonify({
-            "prediction": CLASS_NAMES[class_index],
+            "prediction": CLASS_NAMES[predicted_index],
             "confidence": round(confidence * 100, 2)
         })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# --------------------------------------------------
-# Run (Render compatible)
-# --------------------------------------------------
+# -------------------------------
+# Run App (Render compatible)
+# -------------------------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
