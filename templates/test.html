@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>API Test</title>
+  </head>
+  <body>
+    <h1>API Test Page</h1>
+    <button onclick="testHealth()">Test /health</button>
+    <button onclick="testPredict()">Test /predict (with dummy file)</button>
+    <pre id="output"></pre>
+
+    <script>
+      const output = document.getElementById("output");
+
+      async function testHealth() {
+        output.textContent = "Testing /health endpoint...\n";
+        try {
+          const response = await fetch("/health");
+          const data = await response.json();
+          output.textContent += JSON.stringify(data, null, 2);
+        } catch (error) {
+          output.textContent += "Error: " + error.message;
+        }
+      }
+
+      async function testPredict() {
+        output.textContent = "Testing /predict endpoint...\n";
+        output.textContent +=
+          "Note: This will fail without a real image, but shows if endpoint is reachable\n\n";
+
+        const formData = new FormData();
+        // Create a dummy blob
+        const blob = new Blob(["dummy"], { type: "image/png" });
+        formData.append("file", blob, "test.png");
+
+        try {
+          const response = await fetch("/predict", {
+            method: "POST",
+            body: formData,
+          });
+          const data = await response.json();
+          output.textContent += "Status: " + response.status + "\n";
+          output.textContent += JSON.stringify(data, null, 2);
+        } catch (error) {
+          output.textContent += "Error: " + error.message;
+        }
+      }
+    </script>
+  </body>
+</html>
