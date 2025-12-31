@@ -1,83 +1,84 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🐾 Animal Classifier AI</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-  <div class="container">
-    <h1>🐾 Animal Classifier AI</h1>
-    <p class="subtitle">Upload an image and let AI identify the animal!</p>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🐾 Animal Classifier AI</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <h1>🐾 Animal Classifier AI</h1>
+      <p class="subtitle">Upload an image and let AI identify the animal!</p>
 
-    <!-- Upload Area -->
-    <div class="upload-area" id="uploadArea">
-      <div class="upload-icon">📸</div>
-      <div class="upload-text">Click or Drag & Drop</div>
-      <div class="upload-subtext">to upload an animal image</div>
-      <input 
-        type="file" 
-        id="imageInput" 
-        accept="image/*"
-        aria-label="Upload animal image"
-      >
-    </div>
-
-    <!-- File Info -->
-    <div class="file-info" id="fileInfo">
-      <span class="file-name" id="fileName"></span>
-      <button class="remove-file" id="removeFile" aria-label="Remove file">×</button>
-    </div>
-
-    <!-- Image Preview -->
-    <img id="previewImage" alt="Preview">
-
-    <!-- Predict Button -->
-    <button class="predict-btn" id="predictBtn">
-      🔮 Predict Animal
-    </button>
-
-    <!-- Loader -->
-    <div class="loader" id="loader"></div>
-
-    <!-- Result -->
-    <div class="result" id="result">
-      <div class="result-label">Predicted Animal:</div>
-      <div class="result-animal" id="animalName">-</div>
-      <div class="result-confidence">
-        Confidence: <span id="confidence">0</span>%
+      <!-- Upload Area -->
+      <div class="upload-area" id="uploadArea">
+        <div class="upload-icon">📸</div>
+        <div class="upload-text">Click or Drag & Drop</div>
+        <div class="upload-subtext">to upload an animal image</div>
+        <input
+          type="file"
+          id="imageInput"
+          accept="image/*"
+          aria-label="Upload animal image"
+        />
       </div>
-      <div class="confidence-bar">
-        <div class="confidence-fill" id="confidenceFill"></div>
+
+      <!-- File Info -->
+      <div class="file-info" id="fileInfo">
+        <span class="file-name" id="fileName"></span>
+        <button class="remove-file" id="removeFile" aria-label="Remove file">
+          ×
+        </button>
       </div>
-    </div>
 
-    <!-- Error Message -->
-    <div class="error" id="error"></div>
+      <!-- Image Preview -->
+      <img id="previewImage" alt="Preview" />
 
-    <!-- Supported Animals -->
-    <div class="supported-animals">
-      <h3>🎯 Supported Animals</h3>
-      <div class="animal-tags">
-        <span class="animal-tag">🐱 Cat</span>
-        <span class="animal-tag">🐶 Dog</span>
-        <span class="animal-tag">🐴 Horse</span>
-        <span class="animal-tag">🐑 Sheep</span>
-        <span class="animal-tag">🐄 Cow</span>
-        <span class="animal-tag">🐘 Elephant</span>
-        <span class="animal-tag">🦋 Butterfly</span>
-        <span class="animal-tag">🐔 Chicken</span>
-        <span class="animal-tag">🕷️ Spider</span>
-        <span class="animal-tag">🐿️ Squirrel</span>
+      <!-- Predict Button -->
+      <button class="predict-btn" id="predictBtn">🔮 Predict Animal</button>
+
+      <!-- Loader -->
+      <div class="loader" id="loader"></div>
+
+      <!-- Result -->
+      <div class="result" id="result">
+        <div class="result-label">Predicted Animal:</div>
+        <div class="result-animal" id="animalName">-</div>
+        <div class="result-confidence">
+          Confidence: <span id="confidence">0</span>%
+        </div>
+        <div class="confidence-bar">
+          <div class="confidence-fill" id="confidenceFill"></div>
+        </div>
       </div>
+
+      <!-- Error Message -->
+      <div class="error" id="error"></div>
+
+      <!-- Supported Animals -->
+      <div class="supported-animals">
+        <h3>🎯 Supported Animals</h3>
+        <div class="animal-tags">
+          <span class="animal-tag">🐱 Cat</span>
+          <span class="animal-tag">🐶 Dog</span>
+          <span class="animal-tag">🐴 Horse</span>
+          <span class="animal-tag">🐑 Sheep</span>
+          <span class="animal-tag">🐄 Cow</span>
+          <span class="animal-tag">🐘 Elephant</span>
+          <span class="animal-tag">🦋 Butterfly</span>
+          <span class="animal-tag">🐔 Chicken</span>
+          <span class="animal-tag">🕷️ Spider</span>
+          <span class="animal-tag">🐿️ Squirrel</span>
+        </div>
+      </div>
+
+      <div class="footer">Made with ❤️ using TensorFlow & Flask</div>
     </div>
 
-    <div class="footer">
-      Made with ❤️ using TensorFlow & Flask
-    </div>
-  </div>
-
-  <script src="{{ url_for('static', filename='script.js') }}"></script>
-</body>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+  </body>
 </html>
