@@ -37,7 +37,7 @@
 # ========================
 # ML / Data Science
 # ========================
-# *.h5
+*.h5
 *.hdf5
 *.ckpt
 *.pt
@@ -45,6 +45,11 @@
 *.onnx
 *.joblib
 *.pkl
+
+# Exclude old/duplicate model formats - keep only .keras
+animals10_model.h5
+animals10_model_export/
+animals10_model_tf/
 
 # ========================
 # Logs & temp files
