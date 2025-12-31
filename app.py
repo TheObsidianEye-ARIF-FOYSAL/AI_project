@@ -4,6 +4,7 @@ import tensorflow as tf
 from flask import Flask, request, jsonify, render_template, send_from_directory
 from PIL import Image
 import logging
+import gc  # For garbage collection
 
 # Try to import CORS, but make it optional
 try:
@@ -176,11 +177,26 @@ def predict():
 
     try:
         logger.info(f"📁 Processing file: {file.filename}")
+        
+        # Limit file size to prevent memory issues
+        file.seek(0, os.SEEK_END)
+        file_size = file.tell()
+        file.seek(0)
+        
+        max_size = 10 * 1024 * 1024  # 10MB
+        if file_size > max_size:
+            return jsonify({"error": f"File too large. Max size: {max_size // (1024*1024)}MB"}), 400
+        
+        logger.info(f"📏 File size: {file_size / 1024:.2f} KB")
+        
         image = Image.open(file)
         processed = preprocess_image(image)
+        
+        # Close image to free memory
+        image.close()
 
         logger.info("🔮 Running prediction...")
-        predictions = model.predict(processed)
+        predictions = model.predict(processed, verbose=0)  # verbose=0 to reduce logging
         predicted_index = int(np.argmax(predictions))
         confidence = float(np.max(predictions))
 
@@ -189,6 +205,11 @@ def predict():
             "confidence": round(confidence * 100, 2)
         }
         
+        # Clean up memory
+        del processed
+        del predictions
+        gc.collect()
+        
         logger.info(f"✅ Prediction: {result['prediction']} ({result['confidence']}%)")
         return jsonify(result)
 
@@ -196,7 +217,15 @@ def predict():
         logger.error(f"❌ Prediction error: {e}")
         import traceback
         logger.error(traceback.format_exc())
-        return jsonify({"error": str(e)}), 500
+        
+        # Return more specific error messages
+        error_msg = str(e)
+        if "out of memory" in error_msg.lower() or "oom" in error_msg.lower():
+            error_msg = "Server out of memory. Try a smaller image or upgrade server."
+        elif "timeout" in error_msg.lower():
+            error_msg = "Prediction timeout. Server is overloaded."
+        
+        return jsonify({"error": error_msg}), 500
 
 # Error handlers
 @app.errorhandler(404)

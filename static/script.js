@@ -123,6 +123,27 @@ async function uploadImage() {
       body: formData
     });
 
+    // Check if response is ok before trying to parse JSON
+    if (!response.ok) {
+      // Try to get error message, but handle empty responses
+      let errorMsg = `Server error (${response.status})`;
+      try {
+        const data = await response.json();
+        errorMsg = data.error || data.message || errorMsg;
+      } catch (e) {
+        // Response body is empty or not JSON
+        if (response.status === 502) {
+          errorMsg = 'Server is overloaded or crashed. The model might be too large for the free tier. Try again in a moment.';
+        } else if (response.status === 503) {
+          errorMsg = 'Service unavailable. Server is starting up, please wait 30 seconds and try again.';
+        } else if (response.status === 504) {
+          errorMsg = 'Request timeout. Prediction took too long. Server might need more resources.';
+        }
+      }
+      showError(errorMsg);
+      return;
+    }
+
     const data = await response.json();
 
     if (response.ok) {
