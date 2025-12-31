@@ -1,40 +1,72 @@
 from flask import Flask, request, jsonify, render_template
-import tensorflow as tf
-import numpy as np
-from tensorflow.keras.preprocessing import image
 import os
+import tensorflow as tf
+from tensorflow.keras.preprocessing import image
+import numpy as np
+import gdown
 
+# =========================
+# CONFIGURATION
+# =========================
 app = Flask(__name__)
 
-# Load model once
-model = tf.keras.models.load_model("animals10_model.h5")
+MODEL_PATH = "animals10_model.h5"
+MODEL_URL = "YOUR_MODEL_DOWNLOAD_LINK_HERE"  # Replace with your Google Drive / cloud link
 
-# Home page
-@app.route("/")
-def home():
-    return render_template("index.html")  # or simple text
+# Download the model if it doesn't exist
+if not os.path.exists(MODEL_PATH):
+    print("Downloading model...")
+    gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
 
-# Prediction API
-@app.route("/predict", methods=["POST"])
+# Load the model
+model = tf.keras.models.load_model(MODEL_PATH)
+
+# Get class names from training dataset (replace with your classes)
+class_names = ['butterfly', 'cat', 'chicken', 'cow', 'dog', 'elephant', 'horse', 'sheep', 'spider', 'squirrel']
+
+IMG_SIZE = 224  # Image size used in training
+
+# =========================
+# ROUTES
+# =========================
+@app.route('/')
+def index():
+    return render_template('index.html')  # HTML page for uploading image
+
+@app.route('/predict', methods=['POST'])
 def predict():
     if 'file' not in request.files:
-        return jsonify({"error": "No file uploaded"}), 400
+        return jsonify({"error": "No file part"}), 400
 
-    img_file = request.files['file']
-    img_path = os.path.join("uploads", img_file.filename)
-    img_file.save(img_path)
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
 
-    # Preprocess image
-    IMG_SIZE = 224
-    img = image.load_img(img_path, target_size=(IMG_SIZE, IMG_SIZE))
-    img = image.img_to_array(img)
-    img = np.expand_dims(img, axis=0) / 255.0
+    # Save the uploaded file temporarily
+    filepath = os.path.join("uploads", file.filename)
+    os.makedirs("uploads", exist_ok=True)
+    file.save(filepath)
 
-    pred = model.predict(img)
-    class_names = list(model.class_names) if hasattr(model, "class_names") else ["cane","cavallo","elefante","farfalla","gallina","gatto","mucca","pecora","ragno","scoiattolo"]
-    result = class_names[np.argmax(pred)]
-    return jsonify({"prediction": result})
+    # Process the image
+    img = image.load_img(filepath, target_size=(IMG_SIZE, IMG_SIZE))
+    img_array = image.img_to_array(img)
+    img_array = np.expand_dims(img_array, axis=0) / 255.0
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    # Predict
+    pred = model.predict(img_array)
+    predicted_class = class_names[np.argmax(pred)]
+    confidence = float(np.max(pred))
 
+    # Remove temporary file
+    os.remove(filepath)
+
+    return jsonify({
+        "predicted_class": predicted_class,
+        "confidence": confidence
+    })
+
+# =========================
+# RUN THE APP
+# =========================
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
