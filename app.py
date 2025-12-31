@@ -1,72 +1,82 @@
-from flask import Flask, request, jsonify, render_template
 import os
-import tensorflow as tf
-from tensorflow.keras.preprocessing import image
 import numpy as np
-import gdown
+import tensorflow as tf
+from flask import Flask, request, jsonify, render_template
+from tensorflow.keras.preprocessing import image
+from werkzeug.utils import secure_filename
 
-# =========================
-# CONFIGURATION
-# =========================
+# --------------------------------------------------
+# App configuration
+# --------------------------------------------------
 app = Flask(__name__)
 
-MODEL_PATH = "animals10_model.h5"
-MODEL_URL = "YOUR_MODEL_DOWNLOAD_LINK_HERE"  # Replace with your Google Drive / cloud link
+UPLOAD_FOLDER = "uploads"
+MODEL_PATH = "animals10_model_tf"   # SavedModel directory
+IMG_SIZE = 224
 
-# Download the model if it doesn't exist
-if not os.path.exists(MODEL_PATH):
-    print("Downloading model...")
-    gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Load the model
-model = tf.keras.models.load_model(MODEL_PATH)
+# --------------------------------------------------
+# Load model ONCE (important for performance)
+# --------------------------------------------------
+model = tf.keras.models.load_model(
+    MODEL_PATH,
+    compile=False
+)
 
-# Get class names from training dataset (replace with your classes)
-class_names = ['butterfly', 'cat', 'chicken', 'cow', 'dog', 'elephant', 'horse', 'sheep', 'spider', 'squirrel']
+# Class labels (MUST match training order)
+CLASS_NAMES = [
+    "butterfly",
+    "cat",
+    "chicken",
+    "cow",
+    "dog",
+    "elephant",
+    "horse",
+    "sheep",
+    "spider",
+    "squirrel"
+]
 
-IMG_SIZE = 224  # Image size used in training
+# --------------------------------------------------
+# Routes
+# --------------------------------------------------
+@app.route("/")
+def home():
+    return render_template("index.html")
 
-# =========================
-# ROUTES
-# =========================
-@app.route('/')
-def index():
-    return render_template('index.html')  # HTML page for uploading image
-
-@app.route('/predict', methods=['POST'])
+@app.route("/predict", methods=["POST"])
 def predict():
-    if 'file' not in request.files:
-        return jsonify({"error": "No file part"}), 400
+    if "file" not in request.files:
+        return jsonify({"error": "No file uploaded"})
 
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({"error": "No selected file"}), 400
+    file = request.files["file"]
+    if file.filename == "":
+        return jsonify({"error": "No selected file"})
 
-    # Save the uploaded file temporarily
-    filepath = os.path.join("uploads", file.filename)
-    os.makedirs("uploads", exist_ok=True)
+    filename = secure_filename(file.filename)
+    filepath = os.path.join(UPLOAD_FOLDER, filename)
     file.save(filepath)
 
-    # Process the image
+    # Load and preprocess image
     img = image.load_img(filepath, target_size=(IMG_SIZE, IMG_SIZE))
     img_array = image.img_to_array(img)
     img_array = np.expand_dims(img_array, axis=0) / 255.0
 
-    # Predict
-    pred = model.predict(img_array)
-    predicted_class = class_names[np.argmax(pred)]
-    confidence = float(np.max(pred))
+    # Prediction
+    predictions = model.predict(img_array)
+    predicted_index = np.argmax(predictions)
+    confidence = float(np.max(predictions))
 
-    # Remove temporary file
-    os.remove(filepath)
+    predicted_class = CLASS_NAMES[predicted_index]
 
     return jsonify({
-        "predicted_class": predicted_class,
-        "confidence": confidence
+        "prediction": predicted_class,
+        "confidence": round(confidence * 100, 2)
     })
 
-# =========================
-# RUN THE APP
-# =========================
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+# --------------------------------------------------
+# Main
+# --------------------------------------------------
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
