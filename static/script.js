@@ -128,7 +128,12 @@ async function uploadImage() {
     if (response.ok) {
       showResult(data.prediction, data.confidence);
     } else {
-      showError(data.error || 'Prediction failed');
+      // Check if it's a 503 (service unavailable - model loading)
+      if (response.status === 503 && data.model_loading) {
+        showError('Model is loading. Please wait a moment and try again.');
+      } else {
+        showError(data.error || 'Prediction failed');
+      }
     }
   } catch (error) {
     console.error('Error:', error);

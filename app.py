@@ -29,13 +29,54 @@ if cors_available:
 # Load Model (Keras 3 compatible)
 # -------------------------------
 MODEL_PATH = "animals10_model.keras"
+model = None
+model_loading = False
+model_error = None
 
-try:
-    model = tf.keras.models.load_model(MODEL_PATH, compile=False)
-    logger.info(f"✅ Model loaded successfully from {MODEL_PATH}")
-except Exception as e:
-    logger.error(f"❌ Error loading model: {e}")
-    model = None
+def load_model_sync():
+    """Load model synchronously"""
+    global model, model_loading, model_error
+    
+    if model is not None:
+        return model
+    
+    if model_loading:
+        logger.info("⏳ Model is already being loaded...")
+        return None
+    
+    model_loading = True
+    model_error = None
+    
+    # Check if model file exists
+    if not os.path.exists(MODEL_PATH):
+        error_msg = f"Model file not found at: {os.path.abspath(MODEL_PATH)}"
+        logger.error(f"❌ {error_msg}")
+        logger.error(f"Current directory: {os.getcwd()}")
+        logger.error(f"Files in current directory: {os.listdir('.')}")
+        model_error = error_msg
+        model_loading = False
+        return None
+    
+    try:
+        logger.info(f"🔄 Loading model from: {os.path.abspath(MODEL_PATH)}")
+        logger.info(f"📦 Model file size: {os.path.getsize(MODEL_PATH) / (1024*1024):.2f} MB")
+        model = tf.keras.models.load_model(MODEL_PATH, compile=False)
+        logger.info(f"✅ Model loaded successfully!")
+        model_loading = False
+        return model
+    except Exception as e:
+        error_msg = f"Error loading model: {str(e)}"
+        logger.error(f"❌ {error_msg}")
+        logger.error(f"TensorFlow version: {tf.__version__}")
+        import traceback
+        logger.error(traceback.format_exc())
+        model_error = error_msg
+        model_loading = False
+        return None
+
+# Try to load model at startup (but don't block)
+logger.info("🚀 Attempting to load model at startup...")
+load_model_sync()
 
 # -------------------------------
 # Class Names (CHANGE if needed)
@@ -64,32 +105,76 @@ def home():
     """Serve the main HTML page"""
     return render_template("index.html")
 
+@app.route("/test", methods=["GET"])
+def test():
+    """Test page for debugging"""
+    return render_template("test.html")
+
 @app.route("/health", methods=["GET"])
 def health():
     """Health check endpoint for Render"""
     return jsonify({
         "status": "healthy",
         "model_loaded": model is not None,
+        "model_loading": model_loading,
+        "model_error": model_error,
         "message": "Animal Classification API is running 🚀"
     })
 
+@app.route("/model-status", methods=["GET"])
+def model_status():
+    # Try to load model if not loaded
+    if model is None:
+        logger.info("⚠️ Model not loaded, attempting to load...")
+        load_model_sync()
+        
+        if model is None:
+            error_msg = model_error or "Model not loaded. Please try again in a moment."
+            logger.error(f"❌ Model still not loaded: {error_msg}")
+            return jsonify({
+                "error": error_msg,
+                "model_loading": model_loading,
+                "suggestion": "The model is loading. Please wait 10-20 seconds and try again."
+            }), 503
+        "model_loading": model_loading,
+        "model_path": MODEL_PATH,
+        "model_exists": os.path.exists(MODEL_PATH),
+        "current_directory": os.getcwd(),
+        "tensorflow_version": tf.__version__
+    }
+    
+    if model_error:
+        status["error"] = model_error
+    
+    if os.path.exists(MODEL_PATH):
+        status["model_size_mb"] = round(os.path.getsize(MODEL_PATH) / (1024*1024), 2)
+    
+    return jsonify(status)
+
 @app.route("/predict", methods=["POST"])
 def predict():
+    logger.info(f"🔍 Predict endpoint called. Model status: {model is not None}")
+    
     if model is None:
-        return jsonify({"error": "Model not loaded"}), 500
+        logger.error("❌ Model is None - returning error")
+        return jsonify({"error": "Model not loaded. Please restart the server."}), 500
 
     if "file" not in request.files:
+        logger.warning("⚠️ No file in request")
         return jsonify({"error": "No file uploaded"}), 400
 
     file = request.files["file"]
 
     if file.filename == "":
+        logger.warning("⚠️ Empty filename")
         return jsonify({"error": "Empty filename"}), 400
 
     try:
+        logger.info(f"📁 Processing file: {file.filename}")
         image = Image.open(file)
         processed = preprocess_image(image)
 
+        logger.info("🔮 Running prediction...")
         predictions = model.predict(processed)
         predicted_index = int(np.argmax(predictions))
         confidence = float(np.max(predictions))
@@ -104,6 +189,8 @@ def predict():
 
     except Exception as e:
         logger.error(f"❌ Prediction error: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         return jsonify({"error": str(e)}), 500
 
 # Error handlers
