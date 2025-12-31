@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Diagnostic</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+        h1 { text-align: center; margin-bottom: 30px; }
+        .test-section {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover { background: #45a049; }
+        button:disabled { background: #cccccc; cursor: not-allowed; }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { color: #4CAF50; }
+        .error { color: #ff6b6b; }
+        .info { color: #74b9ff; }
+        .endpoint-info {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 API Diagnostic Tool</h1>
+        
+        <div class="test-section">
+            <h2>Environment Info</h2>
+            <div class="result" id="envInfo"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>1. Test /health Endpoint</h2>
+            <p class="endpoint-info">GET /health</p>
+            <button onclick="testHealth()">Test Health</button>
+            <div class="result" id="healthResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. Test /model-status Endpoint</h2>
+            <p class="endpoint-info">GET /model-status</p>
+            <button onclick="testModelStatus()">Test Model Status</button>
+            <div class="result" id="modelStatusResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. Test /predict Endpoint</h2>
+            <p class="endpoint-info">POST /predict (requires image)</p>
+            <input type="file" id="testImage" accept="image/*">
+            <button onclick="testPredict()">Test Predict</button>
+            <div class="result" id="predictResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>4. CORS Test</h2>
+            <p>Tests if CORS headers are present</p>
+            <button onclick="testCORS()">Test CORS</button>
+            <div class="result" id="corsResult"></div>
+        </div>
+    </div>
+
+    <script>
+        // Show environment info on load
+        window.onload = function() {
+            const envInfo = document.getElementById('envInfo');
+            envInfo.innerHTML = `
+<span class="info">Current URL:</span> ${window.location.href}
+<span class="info">Hostname:</span> ${window.location.hostname}
+<span class="info">Protocol:</span> ${window.location.protocol}
+<span class="info">Port:</span> ${window.location.port || 'default'}
+<span class="info">User Agent:</span> ${navigator.userAgent}
+<span class="info">Online:</span> ${navigator.onLine ? '✅ Yes' : '❌ No'}
+            `.trim();
+        };
+
+        async function testHealth() {
+            const result = document.getElementById('healthResult');
+            result.innerHTML = '<span class="info">Testing...</span>';
+            
+            try {
+                const start = Date.now();
+                const response = await fetch('/health');
+                const duration = Date.now() - start;
+                const data = await response.json();
+                
+                result.innerHTML = `
+<span class="success">✅ SUCCESS (${duration}ms)</span>
+Status: ${response.status}
+Response: ${JSON.stringify(data, null, 2)}
+                `.trim();
+            } catch (error) {
+                result.innerHTML = `
+<span class="error">❌ ERROR</span>
+Type: ${error.name}
+Message: ${error.message}
+Stack: ${error.stack}
+                `.trim();
+            }
+        }
+
+        async function testModelStatus() {
+            const result = document.getElementById('modelStatusResult');
+            result.innerHTML = '<span class="info">Testing...</span>';
+            
+            try {
+                const start = Date.now();
+                const response = await fetch('/model-status');
+                const duration = Date.now() - start;
+                const data = await response.json();
+                
+                result.innerHTML = `
+<span class="success">✅ SUCCESS (${duration}ms)</span>
+Status: ${response.status}
+Response: ${JSON.stringify(data, null, 2)}
+                `.trim();
+            } catch (error) {
+                result.innerHTML = `
+<span class="error">❌ ERROR</span>
+Type: ${error.name}
+Message: ${error.message}
+Stack: ${error.stack}
+                `.trim();
+            }
+        }
+
+        async function testPredict() {
+            const result = document.getElementById('predictResult');
+            const fileInput = document.getElementById('testImage');
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                result.innerHTML = '<span class="error">❌ Please select an image first</span>';
+                return;
+            }
+            
+            result.innerHTML = '<span class="info">Testing...</span>';
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', fileInput.files[0]);
+                
+                const start = Date.now();
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                const duration = Date.now() - start;
+                const data = await response.json();
+                
+                const statusClass = response.ok ? 'success' : 'error';
+                const statusIcon = response.ok ? '✅' : '⚠️';
+                
+                result.innerHTML = `
+<span class="${statusClass}">${statusIcon} Response (${duration}ms)</span>
+Status: ${response.status}
+Response: ${JSON.stringify(data, null, 2)}
+                `.trim();
+            } catch (error) {
+                result.innerHTML = `
+<span class="error">❌ ERROR</span>
+Type: ${error.name}
+Message: ${error.message}
+Stack: ${error.stack}
+                `.trim();
+            }
+        }
+
+        async function testCORS() {
+            const result = document.getElementById('corsResult');
+            result.innerHTML = '<span class="info">Testing...</span>';
+            
+            try {
+                const response = await fetch('/health', {
+                    method: 'OPTIONS'
+                });
+                
+                const headers = {};
+                response.headers.forEach((value, key) => {
+                    headers[key] = value;
+                });
+                
+                const corsHeaders = Object.keys(headers).filter(h => h.toLowerCase().includes('access-control'));
+                
+                result.innerHTML = `
+<span class="success">✅ CORS Test Complete</span>
+Status: ${response.status}
+CORS Headers Found: ${corsHeaders.length}
+${corsHeaders.length > 0 ? '\nCORS Headers:\n' + corsHeaders.map(h => `  ${h}: ${headers[h]}`).join('\n') : '\n⚠️ No CORS headers detected'}
+
+All Response Headers:
+${JSON.stringify(headers, null, 2)}
+                `.trim();
+            } catch (error) {
+                result.innerHTML = `
+<span class="error">❌ ERROR</span>
+Type: ${error.name}
+Message: ${error.message}
+                `.trim();
+            }
+        }
+    </script>
+</body>
+</html>

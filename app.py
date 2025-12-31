@@ -110,6 +110,11 @@ def test():
     """Test page for debugging"""
     return render_template("test.html")
 
+@app.route("/diagnostic", methods=["GET"])
+def diagnostic():
+    """Diagnostic page for troubleshooting"""
+    return render_template("diagnostic.html")
+
 @app.route("/health", methods=["GET"])
 def health():
     """Health check endpoint for Render"""

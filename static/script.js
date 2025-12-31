@@ -137,7 +137,22 @@ async function uploadImage() {
     }
   } catch (error) {
     console.error('Error:', error);
-    showError('Network error. Please check your connection and try again.');
+    console.error('Error details:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack
+    });
+    
+    // More specific error messages
+    let errorMessage = 'Network error. ';
+    if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+      errorMessage += 'Cannot connect to server. Server may be down or starting up. ';
+    } else if (error.message.includes('NetworkError')) {
+      errorMessage += 'Network connection failed. ';
+    }
+    errorMessage += 'Please wait a moment and try again.';
+    
+    showError(errorMessage);
   } finally {
     loader.classList.remove('show');
     predictBtn.disabled = false;
