@@ -1,4 +1,5 @@
-flask
-tensorflow
+tensorflow==2.14.0
 numpy
-pillow
+flask
+gunicorn
+matplotlib
